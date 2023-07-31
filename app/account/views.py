@@ -1,9 +1,11 @@
-from django.shortcuts import render
-from django.http import HttpRequest
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import HttpRequest, JsonResponse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.views.decorators.http import require_POST
 from .forms import UserRegistrationForm, UserEditForm, ProfileEditForm
-from .models import Profile
+from .models import Profile, Contact
 
 
 @login_required
@@ -54,3 +56,55 @@ def edit(request: HttpRequest):
     }
 
     return render(request=request, template_name=template_name, context=context)
+
+
+@login_required
+def user_list(request: HttpRequest):
+    template_name = 'account/user/list.html'
+    users = User.objects.filter(is_active=True)
+
+    context = {
+        'users': users,
+        'section': 'people'
+    }
+
+    return render(request=request, template_name=template_name, context=context)
+
+
+@login_required
+def user_detail(request: HttpRequest, username: str):
+    template_name = 'account/user/detail.html'
+    user = get_object_or_404(User,
+                             username=username,
+                             is_active=True)
+
+    context = {
+        'user': user,
+        'section': 'people'
+    }
+
+    return render(request=request, template_name=template_name, context=context)
+
+
+@require_POST
+@login_required
+def user_follow(request: HttpRequest):
+    user_id = request.POST.get('id')
+    action = request.POST.get('action')
+
+    if user_id and action:
+        try:
+            user = User.objects.get(id=user_id)
+            if int(user_id) == request.user.id:
+                return JsonResponse({'status': 'error'})
+            if action == 'follow':
+                Contact.objects.get_or_create(user_from=request.user,
+                                              user_to=user)
+            else:
+                Contact.objects.filter(user_from=request.user,
+                                       user_to=user).delete()
+            return JsonResponse({'status': 'ok'})
+        except User.DoesNotExist:
+            return JsonResponse({'status': 'error'})
+
+    return JsonResponse({'status': 'error'})
