@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'django_extensions',
     'images.apps.ImagesConfig',
     'easy_thumbnails',
-    'actions.apps.ActionsConfig'
+    'actions.apps.ActionsConfig',
 ]
 
 MIDDLEWARE = [
@@ -126,6 +126,10 @@ DATABASES = {
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 0
 
 
 # Password validation

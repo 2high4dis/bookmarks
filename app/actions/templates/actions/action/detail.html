@@ -1,0 +1,43 @@
+{% load thumbnail %}
+
+{% with user=action.user profile=action.user.profile %}
+<div class="action">
+    <div class="images">
+
+        <a href="{{ user.get_absolute_url }}">
+            {% if profile.photo %}
+            {% thumbnail profile.photo 80x80 crop="smart" as im %}
+            <img src="{{ im.url }}" alt="{{ user.get_full_name }}" class="item-img">
+            {% else %}
+            <img src="/media/users/no-photo.jpg" alt="{{ user.get_full_name }}" class="item-img"
+                style="width: 80px; height: 80px;">
+            {% endif %}
+        </a>
+        {% if action.target %}
+        {% with target=action.target %}
+        {% if target.image %}
+        {% thumbnail target.image 80x80 crop="smart" as im %}
+        <a href="{{ target.get_absolute_url }}">
+            <img src="{{ im.url }}" class="item-img">
+        </a>
+        {% endif %}
+        {% endwith %}
+        {% endif %}
+    </div>
+    <div class="info">
+        <p>
+            <span class="date">{{ action.created|timesince }} ago</span>
+            <br>
+            <a href="{{ user.get_absolute_url }}">
+                {{ user.first_name }}
+            </a>
+            {{ action.verb }}
+            {% if action.target %}
+            {% with target=action.target %}
+            <a href="{{ target.get_absolute_url }}">{{ target }}</a>
+            {% endwith %}
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% endwith %}

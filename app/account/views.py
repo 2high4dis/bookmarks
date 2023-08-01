@@ -6,12 +6,28 @@ from django.contrib.auth.models import User
 from django.views.decorators.http import require_POST
 from .forms import UserRegistrationForm, UserEditForm, ProfileEditForm
 from .models import Profile, Contact
+from actions.utils import create_action
+from actions.models import Action
 
 
 @login_required
 def dashboard(request: HttpRequest):
     template_name = 'account/dashboard.html'
-    return render(request=request, template_name=template_name, context={'section': 'dashboard'})
+
+    actions = Action.objects.exclude(user=request.user)
+    following_ids = request.user.following.values_list('id', flat=True)
+
+    if following_ids:
+        actions = actions.filter(user_id__in=following_ids)
+    actions = actions.select_related('user', 'user__profile')\
+                     .prefetch_related('target')[:10]
+
+    context = {
+        'section': 'dashboard',
+        'actions': actions
+    }
+
+    return render(request=request, template_name=template_name, context=context)
 
 
 def register(request: HttpRequest):
@@ -23,6 +39,7 @@ def register(request: HttpRequest):
             new_user.save()
 
             Profile.objects.create(user=new_user)
+            create_action(request.user, 'has created an account')
 
             return render(request=request, template_name='account/register_done.html', context={'new_user': new_user})
     else:
@@ -100,6 +117,7 @@ def user_follow(request: HttpRequest):
             if action == 'follow':
                 Contact.objects.get_or_create(user_from=request.user,
                                               user_to=user)
+                create_action(request.user, 'is following', user)
             else:
                 Contact.objects.filter(user_from=request.user,
                                        user_to=user).delete()
